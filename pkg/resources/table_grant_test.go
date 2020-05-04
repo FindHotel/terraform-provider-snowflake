@@ -6,7 +6,6 @@ import (
 	"time"
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -23,7 +22,7 @@ func TestTableGrant(t *testing.T) {
 }
 
 func TestTableGrantCreate(t *testing.T) {
-	a := assert.New(t)
+	r := require.New(t)
 
 	in := map[string]interface{}{
 		"table_name":    "test-table",
@@ -34,7 +33,7 @@ func TestTableGrantCreate(t *testing.T) {
 		"shares":        []interface{}{"test-share-1", "test-share-2"},
 	}
 	d := schema.TestResourceDataRaw(t, resources.TableGrant().Schema, in)
-	a.NotNil(d)
+	r.NotNil(d)
 
 	WithMockDb(t, func(db *sql.DB, mock sqlmock.Sqlmock) {
 		mock.ExpectExec(`^GRANT SELECT ON TABLE "test-db"."PUBLIC"."test-table" TO ROLE "test-role-1"$`).WillReturnResult(sqlmock.NewResult(1, 1))
@@ -43,7 +42,7 @@ func TestTableGrantCreate(t *testing.T) {
 		mock.ExpectExec(`^GRANT SELECT ON TABLE "test-db"."PUBLIC"."test-table" TO SHARE "test-share-2"$`).WillReturnResult(sqlmock.NewResult(1, 1))
 		expectReadTableGrant(mock)
 		err := resources.CreateTableGrant(d, db)
-		a.NoError(err)
+		r.NoError(err)
 	})
 }
 
@@ -63,7 +62,7 @@ func expectReadTableGrant(mock sqlmock.Sqlmock) {
 }
 
 func TestFutureTableGrantCreate(t *testing.T) {
-	a := assert.New(t)
+	r := require.New(t)
 
 	in := map[string]interface{}{
 		"on_future":     true,
@@ -73,7 +72,7 @@ func TestFutureTableGrantCreate(t *testing.T) {
 		"roles":         []interface{}{"test-role-1", "test-role-2"},
 	}
 	d := schema.TestResourceDataRaw(t, resources.TableGrant().Schema, in)
-	a.NotNil(d)
+	r.NotNil(d)
 
 	WithMockDb(t, func(db *sql.DB, mock sqlmock.Sqlmock) {
 		mock.ExpectExec(
@@ -84,7 +83,30 @@ func TestFutureTableGrantCreate(t *testing.T) {
 		).WillReturnResult(sqlmock.NewResult(1, 1))
 		expectReadFutureTableGrant(mock)
 		err := resources.CreateTableGrant(d, db)
-		a.NoError(err)
+		r.NoError(err)
+	})
+
+	b := require.New(t)
+
+	in = map[string]interface{}{
+		"on_future":     true,
+		"database_name": "test-db",
+		"privilege":     "SELECT",
+		"roles":         []interface{}{"test-role-1", "test-role-2"},
+	}
+	d = schema.TestResourceDataRaw(t, resources.TableGrant().Schema, in)
+	b.NotNil(d)
+
+	WithMockDb(t, func(db *sql.DB, mock sqlmock.Sqlmock) {
+		mock.ExpectExec(
+			`^GRANT SELECT ON FUTURE TABLES IN DATABASE "test-db" TO ROLE "test-role-1"$`,
+		).WillReturnResult(sqlmock.NewResult(1, 1))
+		mock.ExpectExec(
+			`^GRANT SELECT ON FUTURE TABLES IN DATABASE "test-db" TO ROLE "test-role-2"$`,
+		).WillReturnResult(sqlmock.NewResult(1, 1))
+		expectReadFutureTableDatabaseGrant(mock)
+		err := resources.CreateTableGrant(d, db)
+		b.NoError(err)
 	})
 }
 
@@ -97,4 +119,15 @@ func expectReadFutureTableGrant(mock sqlmock.Sqlmock) {
 		time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC), "SELECT", "TABLE", "test-db.PUBLIC.<TABLE>", "ROLE", "test-role-2", false,
 	)
 	mock.ExpectQuery(`^SHOW FUTURE GRANTS IN SCHEMA "test-db"."PUBLIC"$`).WillReturnRows(rows)
+}
+
+func expectReadFutureTableDatabaseGrant(mock sqlmock.Sqlmock) {
+	rows := sqlmock.NewRows([]string{
+		"created_on", "privilege", "grant_on", "name", "grant_to", "grantee_name", "grant_option",
+	}).AddRow(
+		time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC), "SELECT", "TABLE", "test-db.<TABLE>", "ROLE", "test-role-1", false,
+	).AddRow(
+		time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC), "SELECT", "TABLE", "test-db.<TABLE>", "ROLE", "test-role-2", false,
+	)
+	mock.ExpectQuery(`^SHOW FUTURE GRANTS IN DATABASE "test-db"$`).WillReturnRows(rows)
 }

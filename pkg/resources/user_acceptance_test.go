@@ -8,10 +8,11 @@ import (
 	"testing"
 
 	"github.com/Pallinder/go-randomdata"
+	"github.com/chanzuckerberg/terraform-provider-snowflake/pkg/testhelpers"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func checkBool(path, attr string, value bool) func(*terraform.State) error {
@@ -30,13 +31,13 @@ func checkBool(path, attr string, value bool) func(*terraform.State) error {
 }
 
 func TestAccUser(t *testing.T) {
-	a := assert.New(t)
+	r := require.New(t)
 	prefix := acctest.RandStringFromCharSet(10, acctest.CharSetAlpha)
 	prefix2 := randomdata.Email()
-	sshkey1, err := fixture("userkey1")
-	a.NoError(err)
-	sshkey2, err := fixture("userkey2")
-	a.NoError(err)
+	sshkey1, err := testhelpers.Fixture("userkey1")
+	r.NoError(err)
+	sshkey2, err := testhelpers.Fixture("userkey2")
+	r.NoError(err)
 
 	resource.Test(t, resource.TestCase{
 		Providers: providers(),

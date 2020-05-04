@@ -4,7 +4,6 @@ export DIRTY=$(shell if `git diff-index --quiet HEAD --`; then echo false; else 
 # TODO add release flag
 LDFLAGS=-ldflags "-w -s -X github.com/chanzuckerberg/terraform-provider-snowflake/pkg/version.GitSha=${SHA} -X github.com/chanzuckerberg/terraform-provider-snowflake/pkg/version.Version=${VERSION} -X github.com/chanzuckerberg/terraform-provider-snowflake/pkg/version.Dirty=${DIRTY}"
 export BASE_BINARY_NAME=terraform-provider-snowflake_v$(VERSION)
-export GOFLAGS=-mod=vendor
 export GO111MODULE=on
 
 all: test docs install
@@ -16,7 +15,7 @@ setup: ## setup development dependencies
 	curl -sfL https://raw.githubusercontent.com/reviewdog/reviewdog/master/install.sh| sh
 .PHONY: setup
 
-lint: ## run the fast go linters
+lint: fmt ## run the fast go linters
 	./bin/reviewdog -conf .reviewdog.yml  -diff "git diff master"
 .PHONY: lint
 
@@ -24,7 +23,7 @@ lint-ci: ## run the fast go linters
 	./bin/reviewdog -conf .reviewdog.yml  -reporter=github-pr-review
 .PHONY: lint-ci
 
-lint-all: ## run the fast go linters
+lint-all: fmt ## run the fast go linters
 	# doesn't seem to be a way to get reviewdog to not filter by diff
 	./bin/golangci-lint run
 .PHONY: lint-all
@@ -55,11 +54,11 @@ coverage: ## run the go coverage tool, reading file coverage.out
 	go tool cover -html=coverage.txt
 .PHONY: coverage
 
-test: deps ## run the tests
-	go test -race -coverprofile=coverage.txt -covermode=atomic ./...
+test: fmt deps ## run the tests
+	go test -race -coverprofile=coverage.txt -covermode=atomic $(TESTARGS) ./...
 .PHONY: test
 
-test-acceptance: deps ## runs all tests, including the acceptance tests which create and destroys real resources
+test-acceptance: fmt deps ## runs all tests, including the acceptance tests which create and destroys real resources
 	SKIP_WAREHOUSE_GRANT_TESTS=1 SKIP_SHARE_TESTS=1 SKIP_MANAGED_ACCOUNT_TEST=1 TF_ACC=1 go test -v -coverprofile=coverage.txt -covermode=atomic $(TESTARGS) ./...
 .PHONY: test-acceptance
 
@@ -69,7 +68,6 @@ test-acceptance-ci: ## runs all tests, including the acceptance tests which crea
 
 deps:
 	go mod tidy
-	go mod vendor
 .PHONY: deps
 
 install: ## install the terraform-provider-snowflake binary in $GOPATH/bin
@@ -79,6 +77,10 @@ install: ## install the terraform-provider-snowflake binary in $GOPATH/bin
 install-tf: build ## installs plugin where terraform can find it
 	mkdir -p $(HOME)/.terraform.d/plugins
 	cp ./$(BASE_BINARY_NAME) $(HOME)/.terraform.d/plugins/$(BASE_BINARY_NAME)
+.PHONY: install-tf
+
+uninstall-tf: build ## uninstalls plugin from where terraform can find it
+	rm $(HOME)/.terraform.d/plugins/$(BASE_BINARY_NAME) 2>/dev/null
 .PHONY: install-tf
 
 help: ## display help for this makefile
@@ -98,3 +100,12 @@ docs: build ## generate some docs
 check-docs: build ## check that docs have been generated
 	./scripts/update-readme.sh check
 .PHONY: check-docs
+
+check-mod:
+	go mod tidy
+	git diff --exit-code -- go.mod go.sum
+.PHONY: check-mod
+
+fmt:
+	goimports -w -d $$(find . -type f -name '*.go' -not -path "./vendor/*" -not -path "./dist/*")
+.PHONY: fmt
