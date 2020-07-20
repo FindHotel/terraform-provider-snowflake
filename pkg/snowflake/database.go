@@ -1,7 +1,12 @@
 package snowflake
 
 import (
+	"database/sql"
 	"fmt"
+	"log"
+
+	"github.com/jmoiron/sqlx"
+	"github.com/pkg/errors"
 )
 
 // Database returns a pointer to a Builder for a database
@@ -50,4 +55,39 @@ func DatabaseFromDatabase(name, database string) *DatabaseCloneBuilder {
 // Create returns the SQL statement required to create a database from a source database
 func (dsb *DatabaseCloneBuilder) Create() string {
 	return fmt.Sprintf(`CREATE DATABASE "%v" CLONE "%v"`, dsb.name, dsb.database)
+}
+
+type database struct {
+	CreatedOn     sql.NullString `db:"created_on"`
+	DBName        sql.NullString `db:"name"`
+	IsDefault     sql.NullString `db:"is_default"`
+	IsCurrent     sql.NullString `db:"is_current"`
+	Origin        sql.NullString `db:"origin"`
+	Owner         sql.NullString `db:"owner"`
+	Comment       sql.NullString `db:"comment"`
+	Options       sql.NullString `db:"options"`
+	RetentionTime sql.NullString `db:"retention_time"`
+}
+
+func ScanDatabase(row *sqlx.Row) (*database, error) {
+	d := &database{}
+	e := row.StructScan(d)
+	return d, e
+}
+
+func ListDatabases(sdb *sqlx.DB) ([]database, error) {
+	stmt := "SHOW DATABASES"
+	rows, err := sdb.Queryx(stmt)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	dbs := []database{}
+	err = sqlx.StructScan(rows, &dbs)
+	if err == sql.ErrNoRows {
+		log.Printf("[DEBUG] no databases found")
+		return nil, nil
+	}
+	return dbs, errors.Wrapf(err, "unable to scan row for %s", stmt)
 }
