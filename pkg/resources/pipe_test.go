@@ -41,6 +41,30 @@ func TestPipeCreate(t *testing.T) {
 	})
 }
 
+func TestPipeCreateWithAWSSNSTopic(t *testing.T) {
+	r := require.New(t)
+
+	in := map[string]interface{}{
+		"name":          "test_pipe",
+		"database":      "test_db",
+		"schema":        "test_schema",
+		"comment":       "great comment",
+		"aws_sns_topic": "topic_arn",
+	}
+	d := schema.TestResourceDataRaw(t, resources.Pipe().Schema, in)
+	r.NotNil(d)
+
+	WithMockDb(t, func(db *sql.DB, mock sqlmock.Sqlmock) {
+		mock.ExpectExec(
+			`^CREATE PIPE "test_db"."test_schema"."test_pipe" AWS_SNS_TOPIC = 'topic_arn' COMMENT = 'great comment'$`,
+		).WillReturnResult(sqlmock.NewResult(1, 1))
+
+		expectReadPipe(mock)
+		err := resources.CreatePipe(d, db)
+		r.NoError(err)
+	})
+}
+
 func expectReadPipe(mock sqlmock.Sqlmock) {
 	rows := sqlmock.NewRows([]string{
 		"created_on", "name", "database_name", "schema_name", "definition", "owner", "notification_channel", "comment"},
