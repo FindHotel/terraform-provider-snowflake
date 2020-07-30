@@ -12,6 +12,9 @@ import (
 )
 
 func TestAccViewGrantBasic(t *testing.T) {
+	if _, ok := os.LookupEnv("SKIP_DATABASE_TESTS"); ok {
+		t.Skip("Skipping TestAccViewGrantBasic")
+	}
 	viewName := acctest.RandStringFromCharSet(10, acctest.CharSetAlpha)
 	databaseName := acctest.RandStringFromCharSet(10, acctest.CharSetAlpha)
 	roleName := acctest.RandStringFromCharSet(10, acctest.CharSetAlpha)
@@ -55,6 +58,10 @@ func TestAccViewGrantShares(t *testing.T) {
 }
 
 func TestAccFutureViewGrantChange(t *testing.T) {
+	if _, ok := os.LookupEnv("SKIP_SHARE_TESTS"); ok {
+		t.Skip("Skipping TestAccFutureViewGrantChange")
+	}
+
 	viewName := acctest.RandStringFromCharSet(10, acctest.CharSetAlpha)
 	databaseName := acctest.RandStringFromCharSet(10, acctest.CharSetAlpha)
 	roleName := acctest.RandStringFromCharSet(10, acctest.CharSetAlpha)

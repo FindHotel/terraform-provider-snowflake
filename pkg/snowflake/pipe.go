@@ -12,6 +12,7 @@ type PipeBuilder struct {
 	name          string
 	db            string
 	schema        string
+	awsSNSTopic   string
 	autoIngest    bool
 	comment       string
 	copyStatement string
@@ -50,9 +51,15 @@ func (pb *PipeBuilder) WithComment(c string) *PipeBuilder {
 	return pb
 }
 
-// WithURL adds a URL to the PipeBuilder
+// WithCopyStatement adds a copy statement to the PipeBuilder
 func (pb *PipeBuilder) WithCopyStatement(s string) *PipeBuilder {
 	pb.copyStatement = s
+	return pb
+}
+
+// WithAWSSNSTopic adds an AWS SNS Topic ARN to the PipeBuilder
+func (pb *PipeBuilder) WithAWSSNSTopic(arn string) *PipeBuilder {
+	pb.awsSNSTopic = arn
 	return pb
 }
 
@@ -82,6 +89,10 @@ func (pb *PipeBuilder) Create() string {
 
 	if pb.autoIngest {
 		q.WriteString(` AUTO_INGEST = TRUE`)
+	}
+
+	if pb.awsSNSTopic != "" {
+		q.WriteString(fmt.Sprintf(` AWS_SNS_TOPIC = '%v'`, EscapeString(pb.awsSNSTopic)))
 	}
 
 	if pb.comment != "" {

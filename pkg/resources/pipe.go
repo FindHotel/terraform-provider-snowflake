@@ -52,6 +52,13 @@ var pipeSchema = map[string]*schema.Schema{
 			return false
 		},
 	},
+	"aws_sns_topic": &schema.Schema{
+		Type:        schema.TypeString,
+		Optional:    true,
+		Required:    false,
+		ForceNew:    true,
+		Description: "Specifies AWS SNS Topic that SQS managed by Snowflake will subscribe to.",
+	},
 	"auto_ingest": &schema.Schema{
 		Type:        schema.TypeBool,
 		Optional:    true,
@@ -144,6 +151,10 @@ func CreatePipe(data *schema.ResourceData, meta interface{}) error {
 	// Set optionals
 	if v, ok := data.GetOk("copy_statement"); ok {
 		builder.WithCopyStatement(v.(string))
+	}
+
+	if v, ok := data.GetOk("aws_sns_topic"); ok {
+		builder.WithAWSSNSTopic(v.(string))
 	}
 
 	if v, ok := data.GetOk("comment"); ok {

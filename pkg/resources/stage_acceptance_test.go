@@ -2,6 +2,7 @@ package resources_test
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
@@ -9,6 +10,9 @@ import (
 )
 
 func TestAccStage(t *testing.T) {
+	if _, ok := os.LookupEnv("SKIP_DATABASE_TESTS"); ok {
+		t.Skip("Skipping TestAccStage")
+	}
 	accName := acctest.RandStringFromCharSet(10, acctest.CharSetAlpha)
 
 	resource.Test(t, resource.TestCase{

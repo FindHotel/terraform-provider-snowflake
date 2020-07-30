@@ -3,6 +3,7 @@ package resources_test
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"testing"
 	"text/template"
 
@@ -157,6 +158,9 @@ var (
 )
 
 func Test_AccTask(t *testing.T) {
+	if _, ok := os.LookupEnv("SKIP_DATABASE_TESTS"); ok {
+		t.Skip("Skipping Test_AccTask")
+	}
 	resource.Test(t, resource.TestCase{
 		Providers: providers(),
 		Steps: []resource.TestStep{

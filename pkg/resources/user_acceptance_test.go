@@ -3,6 +3,7 @@ package resources_test
 import (
 	"fmt"
 	"log"
+	"os"
 	"strconv"
 	"strings"
 	"testing"
@@ -31,6 +32,9 @@ func checkBool(path, attr string, value bool) func(*terraform.State) error {
 }
 
 func TestAccUser(t *testing.T) {
+	if _, ok := os.LookupEnv("SKIP_DATABASE_TESTS"); ok {
+		t.Skip("Skipping TestAccUser")
+	}
 	r := require.New(t)
 	prefix := acctest.RandStringFromCharSet(10, acctest.CharSetAlpha)
 	prefix2 := randomdata.Email()
