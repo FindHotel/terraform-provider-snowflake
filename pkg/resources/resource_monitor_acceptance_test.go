@@ -2,6 +2,7 @@ package resources_test
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
@@ -9,6 +10,9 @@ import (
 )
 
 func TestAccResourceMonitor(t *testing.T) {
+	if _, ok := os.LookupEnv("SKIP_DATABASE_TESTS"); ok {
+		t.Skip("Skipping TestAccResourceMonitor")
+	}
 	// TODO test more attributes
 	name := acctest.RandStringFromCharSet(10, acctest.CharSetAlpha)
 
