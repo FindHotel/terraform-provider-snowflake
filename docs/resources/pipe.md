@@ -8,6 +8,7 @@
 |         NAME         |  TYPE  |                                                   DESCRIPTION                                                   | OPTIONAL | REQUIRED  | COMPUTED | DEFAULT |
 |----------------------|--------|-----------------------------------------------------------------------------------------------------------------|----------|-----------|----------|---------|
 | auto_ingest          | bool   | Specifies a auto_ingest param for the pipe.                                                                     | true     | false     | false    | false   |
+| aws_sns_topic        | string | Specifies AWS SNS Topic that SQS managed by Snowflake will subscribe to.                                        | true     | false     | false    |         |
 | comment              | string | Specifies a comment for the pipe.                                                                               | true     | false     | false    |         |
 | copy_statement       | string | Specifies the copy statement for the pipe.                                                                      | false    | true      | false    |         |
 | database             | string | The database in which to create the pipe.                                                                       | false    | true      | false    |         |
